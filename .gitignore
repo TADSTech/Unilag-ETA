@@ -41,3 +41,6 @@ dist-ssr
 .eslintcache
 .coverage
 coverage/
+
+
+pnpm-lock.yaml
