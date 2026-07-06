@@ -5,6 +5,7 @@ export type MockUser = {
 };
 
 const KEY = "shuttle-eta-user";
+export const ADMIN_CODE = "PESSA2026"; // dummy admin passcode
 
 export function getMockUser(): MockUser | null {
   if (typeof window === "undefined") return null;

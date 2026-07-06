@@ -1,39 +1,32 @@
 import { useEffect, useRef } from "react";
 
 /**
- * WaterRipple — a single-canvas "rain on a pond" animation.
- *
- * Performance notes:
- * - One 2D canvas, stroke-only ellipses (cheap fill-rate), no shadows/blur.
- * - devicePixelRatio capped at 2 to avoid 3x/4x fill cost on mobile.
- * - Hard caps on live objects (drops + ripples) with array reuse.
- * - requestAnimationFrame is paused when the tab is hidden OR the hero
- *   scrolls out of view (IntersectionObserver).
- * - Delta-time based physics → identical speed on 60/90/120Hz screens.
- * - prefers-reduced-motion → renders one static frame, no loop.
+ * WaterRipple — high-visibility rain-on-a-pond canvas animation.
+ * Compositor-only (transform/opacity), pauses off-screen & hidden tab.
  */
 
 type Ripple = {
   x: number;
   y: number;
-  r: number; // current radius
-  max: number; // radius at which it fully fades
-  speed: number; // px per second
-  width: number; // starting line width
-  alpha: number; // starting alpha
-  hue: 0 | 1; // 0 = primary green, 1 = warm accent (rare)
+  r: number;
+  max: number;
+  speed: number;
+  width: number;
+  alpha: number;
+  accent: boolean;
 };
 
 type Drop = {
   x: number;
   y: number;
-  ty: number; // target (impact) y
-  vy: number; // px per second
-  len: number; // streak length
+  ty: number;
+  vy: number;
+  len: number;
+  angle: number; // slight diagonal
 };
 
-const MAX_RIPPLES = 64;
-const MAX_DROPS = 6;
+const MAX_RIPPLES = 80;
+const MAX_DROPS = 12;
 
 export function WaterRipple({ className }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,30 +39,19 @@ export function WaterRipple({ className }: { className?: string }) {
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    let w = 0;
-    let h = 0;
-    let dpr = 1;
-    let raf = 0;
-    let running = false;
-    let visible = true;
-    let inView = true;
-    let last = 0;
-    let spawnTimer = 0;
-    let pointerTimer = 0;
+    let w = 0, h = 0, dpr = 1;
+    let raf = 0, running = false, visible = true, inView = true;
+    let last = 0, spawnTimer = 0, pointerTimer = 0;
 
     const ripples: Ripple[] = [];
     const drops: Drop[] = [];
 
-    // Theme-tinted strokes. oklch is supported by canvas in all evergreen
-    // browsers; the rgba fallbacks below cover the rest.
-    const GREEN = "oklch(0.55 0.14 150";
-    const AMBER = "oklch(0.78 0.16 75";
-    const supportsOklch =
-      typeof CSS !== "undefined" && CSS.supports?.("color", "oklch(0.5 0.1 150)");
-    const green = (a: number) =>
-      supportsOklch ? `${GREEN} / ${a})` : `rgba(34,140,90,${a})`;
-    const amber = (a: number) =>
-      supportsOklch ? `${AMBER} / ${a})` : `rgba(214,158,46,${a})`;
+    // Strong, visible colors — these are the greens from the design system
+    const G1 = "rgba(28,110,68,";   // dark primary green
+    const G2 = "rgba(52,168,106,";  // lighter primary-glow green
+    const AM = "rgba(200,145,30,";  // warm amber accent
+
+    const col = (base: string, a: number) => `${base}${a.toFixed(3)})`;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
@@ -82,107 +64,117 @@ export function WaterRipple({ className }: { className?: string }) {
       if (reduced) drawStaticFrame();
     };
 
-    const addRipple = (x: number, y: number, big: boolean, hue: 0 | 1 = 0) => {
-      // Splash = 2–3 staggered rings from one impact point.
-      const rings = big ? 3 : 2;
+    const addRipple = (x: number, y: number, big: boolean, accent = false) => {
+      const rings = big ? 4 : 3;
+      const baseMax = big ? 220 : 110;
+      const baseAlpha = big ? 0.75 : 0.55;
+      const baseSpeed = big ? 120 : 80;
       for (let i = 0; i < rings; i++) {
         if (ripples.length >= MAX_RIPPLES) ripples.shift();
+        const variance = 0.8 + Math.random() * 0.4;
         ripples.push({
           x,
           y,
-          r: -i * (big ? 26 : 14), // negative radius = staggered start
-          max: (big ? 150 : 70) * (0.8 + Math.random() * 0.5),
-          speed: (big ? 90 : 60) * (0.85 + Math.random() * 0.3),
-          width: big ? 2.6 - i * 0.5 : 1.8 - i * 0.35,
-          alpha: (big ? 0.65 : 0.45) * (1 - i * 0.22),
-          hue,
+          r: -i * (big ? 32 : 18),
+          max: baseMax * variance,
+          speed: baseSpeed * (0.9 + Math.random() * 0.2),
+          width: big ? 2.8 - i * 0.5 : 2.0 - i * 0.4,
+          alpha: baseAlpha * (1 - i * 0.2),
+          accent: accent && i === 0,
         });
       }
     };
 
     const addDrop = () => {
       if (drops.length >= MAX_DROPS) return;
-      const x = Math.random() * w;
-      const ty = h * (0.25 + Math.random() * 0.65);
+      const x = w * (0.05 + Math.random() * 0.9);
+      const ty = h * (0.15 + Math.random() * 0.75);
+      const angle = (Math.random() - 0.5) * 0.18; // subtle lean
       drops.push({
-        x,
-        y: ty - (140 + Math.random() * 200),
-        ty,
-        vy: 520 + Math.random() * 260,
-        len: 14 + Math.random() * 12,
+        x, y: ty - (180 + Math.random() * 250),
+        ty, vy: 600 + Math.random() * 300,
+        len: 18 + Math.random() * 14,
+        angle,
       });
     };
 
     const drawStaticFrame = () => {
-      // Reduced motion: a calm set of concentric rings, drawn once.
       ctx.clearRect(0, 0, w, h);
-      const spots = [
-        [w * 0.22, h * 0.55],
-        [w * 0.68, h * 0.35],
-        [w * 0.85, h * 0.72],
-      ] as const;
-      for (const [x, y] of spots) {
-        for (let i = 0; i < 3; i++) {
+      [[w * 0.18, h * 0.5], [w * 0.55, h * 0.35], [w * 0.82, h * 0.68]].forEach(([x, y]) => {
+        [60, 95, 130].forEach((r, i) => {
           ctx.beginPath();
-          ctx.ellipse(x, y, 24 + i * 22, (24 + i * 22) * 0.42, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = green(0.18 - i * 0.05);
-          ctx.lineWidth = 1.5 - i * 0.4;
+          ctx.ellipse(x, y, r, r * 0.38, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = col(G1, 0.22 - i * 0.06);
+          ctx.lineWidth = 2.0 - i * 0.5;
           ctx.stroke();
-        }
-      }
+        });
+      });
     };
 
     const frame = (t: number) => {
       raf = requestAnimationFrame(frame);
-      const dt = Math.min((t - last) / 1000, 1 / 20); // clamp big gaps
+      const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
-
       ctx.clearRect(0, 0, w, h);
 
-      // Ambient rain: spawn cadence scales gently with width.
+      // Spawn rain drops — denser
       spawnTimer -= dt;
       if (spawnTimer <= 0) {
-        addDrop();
-        spawnTimer = 0.4 + Math.random() * 0.7 - Math.min(w / 4000, 0.2);
+        const burst = Math.random() < 0.25 ? 2 : 1;
+        for (let b = 0; b < burst; b++) addDrop();
+        spawnTimer = 0.28 + Math.random() * 0.55;
       }
 
-      // Falling drops (short vertical streaks).
+      // Falling drops with angled streak
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i];
         d.y += d.vy * dt;
         if (d.y >= d.ty) {
           drops.splice(i, 1);
-          addRipple(d.x, d.ty, Math.random() < 0.3, Math.random() < 0.07 ? 1 : 0);
+          const big = Math.random() < 0.35;
+          const accent = Math.random() < 0.08;
+          addRipple(d.x, d.ty, big, accent);
+          // Micro-splash: 2–3 tiny satellite drops
+          if (big) {
+            for (let s = 0; s < 2; s++) {
+              const sx = d.x + (Math.random() - 0.5) * 40;
+              const sy = d.ty + (Math.random() - 0.5) * 16;
+              addRipple(sx, sy, false);
+            }
+          }
           continue;
         }
-        const grad = ctx.createLinearGradient(d.x, d.y - d.len, d.x, d.y);
-        grad.addColorStop(0, green(0));
-        grad.addColorStop(1, green(0.65));
+        const dx = Math.sin(d.angle) * d.len;
+        const grad = ctx.createLinearGradient(d.x - dx * 0.5, d.y - d.len, d.x + dx * 0.5, d.y);
+        grad.addColorStop(0, col(G2, 0));
+        grad.addColorStop(0.6, col(G2, 0.35));
+        grad.addColorStop(1, col(G1, 0.72));
         ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.8;
         ctx.lineCap = "round";
         ctx.beginPath();
-        ctx.moveTo(d.x, d.y - d.len);
-        ctx.lineTo(d.x, d.y);
+        ctx.moveTo(d.x - dx * 0.5, d.y - d.len);
+        ctx.lineTo(d.x + dx * 0.5, d.y);
         ctx.stroke();
       }
 
-      // Ripples (perspective-flattened ellipses).
+      // Ripple rings — perspective-foreshortened ellipses
       for (let i = ripples.length - 1; i >= 0; i--) {
         const rp = ripples[i];
         rp.r += rp.speed * dt;
-        if (rp.r >= rp.max) {
-          ripples.splice(i, 1);
-          continue;
-        }
-        if (rp.r <= 0) continue; // staggered ring not born yet
-        const p = rp.r / rp.max; // 0 → 1 life
-        const fade = rp.alpha * (1 - p) * (1 - p);
-        if (fade < 0.004) continue;
+        if (rp.r >= rp.max) { ripples.splice(i, 1); continue; }
+        if (rp.r <= 0) continue;
+
+        const p = rp.r / rp.max;
+        // Ease: strong early, long fade tail
+        const fade = rp.alpha * Math.pow(1 - p, 1.6);
+        if (fade < 0.006) continue;
+
+        const base = rp.accent ? AM : (p < 0.5 ? G1 : G2);
         ctx.beginPath();
-        ctx.ellipse(rp.x, rp.y, rp.r, rp.r * 0.42, 0, 0, Math.PI * 2);
-        ctx.strokeStyle = rp.hue === 1 ? amber(fade) : green(fade);
-        ctx.lineWidth = Math.max(rp.width * (1 - p * 0.6), 0.4);
+        ctx.ellipse(rp.x, rp.y, rp.r, rp.r * 0.38, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = col(base, fade);
+        ctx.lineWidth = Math.max(rp.width * (1 - p * 0.65), 0.5);
         ctx.stroke();
       }
     };
@@ -193,13 +185,9 @@ export function WaterRipple({ className }: { className?: string }) {
       last = performance.now();
       raf = requestAnimationFrame(frame);
     };
-    const stop = () => {
-      running = false;
-      cancelAnimationFrame(raf);
-    };
+    const stop = () => { running = false; cancelAnimationFrame(raf); };
     const sync = () => (visible && inView ? start() : stop());
 
-    // Pointer interaction — coordinates relative to canvas.
     const toLocal = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -207,7 +195,7 @@ export function WaterRipple({ className }: { className?: string }) {
     const onMove = (e: PointerEvent) => {
       if (reduced) return;
       const now = performance.now();
-      if (now - pointerTimer < 90) return; // throttle trail ripples
+      if (now - pointerTimer < 80) return;
       pointerTimer = now;
       const { x, y } = toLocal(e);
       if (x < 0 || y < 0 || x > w || y > h) return;
@@ -217,39 +205,26 @@ export function WaterRipple({ className }: { className?: string }) {
       if (reduced) return;
       const { x, y } = toLocal(e);
       if (x < 0 || y < 0 || x > w || y > h) return;
-      addRipple(x, y, true, 1);
+      addRipple(x, y, true, true);
     };
 
-    const onVis = () => {
-      visible = document.visibilityState === "visible";
-      sync();
-    };
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        inView = entry.isIntersecting;
-        sync();
-      },
-      { threshold: 0 },
-    );
+    const onVis = () => { visible = document.visibilityState === "visible"; sync(); };
+
+    const io = new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; sync(); }, { threshold: 0 });
     io.observe(canvas);
-
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
     resize();
 
-    // Listen on the hero section (parent) so text/buttons don't block ripples.
     const host = canvas.parentElement ?? canvas;
     host.addEventListener("pointermove", onMove, { passive: true });
     host.addEventListener("pointerdown", onDown, { passive: true });
     document.addEventListener("visibilitychange", onVis);
 
-    if (reduced) drawStaticFrame();
-    else start();
+    if (reduced) drawStaticFrame(); else start();
 
     return () => {
-      stop();
-      io.disconnect();
-      ro.disconnect();
+      stop(); io.disconnect(); ro.disconnect();
       host.removeEventListener("pointermove", onMove);
       host.removeEventListener("pointerdown", onDown);
       document.removeEventListener("visibilitychange", onVis);

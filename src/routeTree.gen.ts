@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RideRouteImport } from './routes/ride'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
@@ -19,6 +20,11 @@ import { Route as DashboardRidersRouteImport } from './routes/dashboard.riders'
 import { Route as DashboardMapRouteImport } from './routes/dashboard.map'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard.analytics'
 
+const RideRoute = RideRouteImport.update({
+  id: '/ride',
+  path: '/ride',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -68,6 +74,7 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/ride': typeof RideRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/map': typeof DashboardMapRoute
   '/dashboard/riders': typeof DashboardRidersRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ride': typeof RideRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/map': typeof DashboardMapRoute
   '/dashboard/riders': typeof DashboardRidersRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/ride': typeof RideRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/map': typeof DashboardMapRoute
   '/dashboard/riders': typeof DashboardRidersRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/ride'
     | '/dashboard/analytics'
     | '/dashboard/map'
     | '/dashboard/riders'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ride'
     | '/dashboard/analytics'
     | '/dashboard/map'
     | '/dashboard/riders'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/ride'
     | '/dashboard/analytics'
     | '/dashboard/map'
     | '/dashboard/riders'
@@ -136,10 +148,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  RideRoute: typeof RideRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ride': {
+      id: '/ride'
+      path: '/ride'
+      fullPath: '/ride'
+      preLoaderRoute: typeof RideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -233,6 +253,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  RideRoute: RideRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
