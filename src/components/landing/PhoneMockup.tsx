@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Bus, MapPin } from "lucide-react";
 
 export function PhoneMockup() {
   const [eta, setEta] = useState(9);
-  const [onBoard, setOnBoard] = useState(false);
   useEffect(() => {
     const id = setInterval(() => setEta((e) => (e <= 1 ? 12 : e - 1)), 2000);
     return () => clearInterval(id);
   }, []);
   return (
-    <div className="relative h-[560px] w-[280px] rounded-[2.5rem] border-[10px] border-foreground/90 bg-background shadow-2xl">
+    <Link
+      to="/ride"
+      className="relative block h-[560px] w-[280px] rounded-[2.5rem] border-[10px] border-foreground/90 bg-background shadow-2xl transition hover:-translate-y-1"
+      title="Open the real rider view"
+    >
       <div className="absolute left-1/2 top-2 h-5 w-24 -translate-x-1/2 rounded-full bg-foreground/90" />
       <div className="flex h-full flex-col overflow-hidden rounded-[1.8rem] bg-gradient-to-b from-primary/10 via-background to-background p-5 pt-10">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -43,16 +47,11 @@ export function PhoneMockup() {
             </div>
           ))}
         </div>
-        <button
-          onClick={() => setOnBoard((v) => !v)}
-          className={`mt-auto flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${
-            onBoard ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground"
-          }`}
-        >
+        <div className="mt-auto flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
           <Bus className="h-4 w-4" />
-          {onBoard ? "I'm off" : "I'm on Shuttle A"}
-        </button>
+          I'm on Shuttle A
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

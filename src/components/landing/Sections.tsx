@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { QrCode, MousePointerClick, Brain, Wifi, WifiOff, Coins, Users } from "lucide-react";
 
 export function ProblemStrip() {
@@ -149,12 +150,15 @@ export function LiveDemoWidget() {
             baseline by walking the route ourselves — the app works from tap #1.
           </p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-8 text-center">
+        <Link
+          to="/ride"
+          className="block rounded-2xl border border-border bg-card p-8 text-center transition hover:border-primary/50 hover:bg-primary/5"
+        >
           <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border-2 border-dashed border-primary/40 bg-primary/5">
             <QrCode className="h-24 w-24 text-primary" />
           </div>
-          <div className="mt-4 text-sm text-muted-foreground">Scan to try the rider view</div>
-        </div>
+          <div className="mt-4 text-sm font-medium text-primary">Tap to try the rider view →</div>
+        </Link>
       </div>
     </section>
   );
