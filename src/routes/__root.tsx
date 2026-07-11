@@ -116,6 +116,8 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+import { PresenterConsole } from "@/components/dashboard/PresenterConsole";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -123,6 +125,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <PresenterConsole />
     </QueryClientProvider>
   );
 }

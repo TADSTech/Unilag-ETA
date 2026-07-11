@@ -1,4 +1,5 @@
 import { STOPS, type Stop } from "@/lib/mock-data";
+import { getServerState, syncServerState } from "./shuttle-server-fns";
 
 export type ShuttleId = "A";
 
@@ -82,6 +83,27 @@ function save(state: StoreState) {
   cachedRaw = raw;
   cachedState = state;
   window.dispatchEvent(new Event(CHANGE_EVENT));
+  syncServerState({ state }).catch(() => {});
+}
+
+// client polling loop to get live updates from server memory
+if (isBrowser()) {
+  setInterval(async () => {
+    try {
+      const serverState = await getServerState();
+      if (!serverState) return;
+      const localRaw = window.localStorage.getItem(STORE_KEY);
+      const serverRaw = JSON.stringify(serverState);
+      if (localRaw !== serverRaw) {
+        window.localStorage.setItem(STORE_KEY, serverRaw);
+        cachedRaw = serverRaw;
+        cachedState = serverState;
+        window.dispatchEvent(new Event(CHANGE_EVENT));
+      }
+    } catch {
+      // Offline/unreachable fallback
+    }
+  }, 2500);
 }
 
 export function subscribe(cb: () => void): () => void {

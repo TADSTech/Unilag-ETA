@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { QrCode, MousePointerClick, Brain, Wifi, WifiOff, Coins, Users } from "lucide-react";
 
@@ -137,6 +138,17 @@ export function Roadmap() {
 }
 
 export function LiveDemoWidget() {
+  const [qrUrl, setQrUrl] = useState("");
+  const [displayUrl, setDisplayUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = window.location.origin + "/ride?stop=Faculty";
+      setQrUrl(`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(url)}`);
+      setDisplayUrl(window.location.host + "/ride?stop=Faculty");
+    }
+  }, []);
+
   return (
     <section id="demo" className="border-y border-border bg-muted/40 py-20">
       <div className="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-2 lg:items-center">
@@ -146,18 +158,28 @@ export function LiveDemoWidget() {
             One real, working loop beats five described features.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Scan the QR, tap "I'm on Shuttle A", and watch the ETA update in real time. We seed the
-            baseline by walking the route ourselves — the app works from tap #1.
+            Scan the QR code with your phone to simulate boarding, tap "I'm on Shuttle A", and watch the dashboard update in real time. We seeded the baseline by walking the route ourselves — the app works from tap #1.
           </p>
+          {displayUrl && (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-card px-3 py-1.5 text-xs border border-border">
+              <span className="font-semibold text-primary">Direct Link:</span>
+              <span className="font-mono text-muted-foreground select-all">{displayUrl}</span>
+            </div>
+          )}
         </div>
         <Link
           to="/ride"
+          search={{ stop: "Faculty" }}
           className="block rounded-2xl border border-border bg-card p-8 text-center transition hover:border-primary/50 hover:bg-primary/5"
         >
-          <div className="mx-auto flex h-40 w-40 items-center justify-center rounded-xl border-2 border-dashed border-primary/40 bg-primary/5">
-            <QrCode className="h-24 w-24 text-primary" />
+          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-xl border-2 border-dashed border-primary/40 bg-card p-2 shadow-sm">
+            {qrUrl ? (
+              <img src={qrUrl} alt="Scan QR Code" className="h-full w-full object-contain" />
+            ) : (
+              <QrCode className="h-24 w-24 text-primary animate-pulse" />
+            )}
           </div>
-          <div className="mt-4 text-sm font-medium text-primary">Tap to try the rider view →</div>
+          <div className="mt-4 text-sm font-medium text-primary">Scan QR on phone or Click to try rider view →</div>
         </Link>
       </div>
     </section>
