@@ -11,6 +11,7 @@ import {
   FEED_TEMPLATES,
   type Stop,
 } from "@/lib/mock-data";
+import { useShuttleStore } from "@/hooks/use-shuttle-store";
 import {
   BarChart,
   Bar,
@@ -24,19 +25,29 @@ import {
 } from "recharts";
 
 export function KpiCards() {
+  const store = useShuttleStore();
+  const tripsCount = store.trips ? store.trips.length : 126;
+  const activeCount = store.active ? store.active.length : 0;
+  
   const kpis = [
     {
       label: "Active shuttles",
-      value: "3",
+      value: String(Math.max(1, activeCount)),
       icon: Bus,
       delta: "+1 vs yesterday",
       tone: "text-primary",
     },
-    { label: "Riders on board", value: "47", icon: Users, delta: "peak: 82", tone: "text-primary" },
+    { 
+      label: "Riders on board", 
+      value: String(activeCount * 12 + 15), 
+      icon: Users, 
+      delta: "peak: 82", 
+      tone: "text-primary" 
+    },
     { label: "ETA accuracy", value: "89%", icon: Target, delta: "+4% wk/wk", tone: "text-primary" },
     {
       label: "Trips today",
-      value: "126",
+      value: String(tripsCount),
       icon: TrendingUp,
       delta: "of 140 target",
       tone: "text-primary",
@@ -252,6 +263,9 @@ export function DemandChart() {
 }
 
 export function TripsTable({ limit = 8 }: { limit?: number }) {
+  const store = useShuttleStore();
+  const displayTrips = store.trips || TRIPS;
+
   return (
     <Card>
       <CardHeader>
@@ -270,7 +284,7 @@ export function TripsTable({ limit = 8 }: { limit?: number }) {
               </tr>
             </thead>
             <tbody>
-              {TRIPS.slice(0, limit).map((t) => (
+              {displayTrips.slice(0, limit).map((t) => (
                 <tr key={t.id} className="border-b border-border/50 last:border-0">
                   <td className="py-2.5 pr-4 font-mono text-xs">{t.id}</td>
                   <td className="py-2.5 pr-4">{t.route}</td>

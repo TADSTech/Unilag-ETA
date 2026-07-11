@@ -1,4 +1,4 @@
-import { STOPS, type Stop } from "@/lib/mock-data";
+import { STOPS, type Stop, type Trip, TRIPS } from "@/lib/mock-data";
 import { getServerState, syncServerState } from "./shuttle-server-fns";
 
 export type ShuttleId = "A";
@@ -19,6 +19,7 @@ type StoreState = {
   stopStats: Record<Stop, StopStat>;
   active: ActiveRide[];
   feed: FeedEvent[];
+  trips: Trip[];
 };
 
 const STORE_KEY = "shuttle-eta-store-v1";
@@ -42,6 +43,7 @@ function freshState(): StoreState {
     stopStats: structuredClone(BASELINE),
     active: [],
     feed: [{ id: "seed-1", text: "Baseline seeded from 8 manually timed trips", time: Date.now() }],
+    trips: TRIPS,
   };
 }
 
@@ -59,6 +61,7 @@ function loadFresh(): StoreState {
     for (const s of STOPS) {
       if (!parsed.stopStats[s]) parsed.stopStats[s] = { ...BASELINE[s] };
     }
+    if (!parsed.trips) parsed.trips = [...TRIPS];
     return parsed;
   } catch {
     return freshState();
@@ -184,9 +187,20 @@ export function checkOut(
   const stat = state.stopStats[alightStop];
   state.stopStats[alightStop] = { totalMin: stat.totalMin + totalEstimate, count: stat.count + 1 };
 
+  const tripDuration = Math.round(minutes * 10) / 10;
+  const newTrip: Trip = {
+    id: `T-${1000 + state.trips.length + 1}`,
+    route: `${ride.boardStop} → ${alightStop}`,
+    start: new Date(ride.boardTime).toISOString(),
+    end: new Date().toISOString(),
+    durationMin: tripDuration,
+    riders: 1,
+  };
+  state.trips = [newTrip, ...state.trips];
+
   pushFeed(state, `Student tapped "I'm off" at ${alightStop}`);
   save(state);
-  return { boardStop: ride.boardStop, alightStop, minutes: Math.round(minutes * 10) / 10 };
+  return { boardStop: ride.boardStop, alightStop, minutes: tripDuration };
 }
 
 function sweepStaleIn(state: StoreState) {

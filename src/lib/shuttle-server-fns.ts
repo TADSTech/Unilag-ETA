@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { STOPS, type Stop } from "./mock-data";
+import { STOPS, type Stop, type Trip, TRIPS } from "./mock-data";
 
 export type StopStat = { totalMin: number; count: number };
 export type ActiveRide = {
@@ -15,6 +15,7 @@ export type StoreState = {
   stopStats: Record<Stop, StopStat>;
   active: ActiveRide[];
   feed: FeedEvent[];
+  trips: Trip[];
 };
 
 const BASELINE: Record<Stop, StopStat> = {
@@ -29,6 +30,7 @@ const INITIAL_STATE: StoreState = {
   stopStats: BASELINE,
   active: [],
   feed: [{ id: "seed-1", text: "Baseline seeded from 8 manually timed trips", time: Date.now() }],
+  trips: TRIPS,
 };
 
 const KV_ENDPOINT = "https://kvdb.io/Kx9YmZ8p2qRtS8b5MhG67D/state";
@@ -126,6 +128,7 @@ export const resetServerState = createServerFn("POST", async () => {
     stopStats: structuredClone(BASELINE),
     active: [],
     feed: [{ id: "seed-reset", text: "Demo state reset to baseline", time: Date.now() }],
+    trips: TRIPS,
   };
   await saveState(fresh);
   return fresh;

@@ -248,8 +248,9 @@ function RiderView() {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Recent activity
+          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <span>Recent activity</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
           </div>
           <ul className="space-y-2">
             {store.feed.slice(0, 6).map((f) => (
@@ -265,6 +266,30 @@ function RiderView() {
             ))}
           </ul>
         </div>
+
+        {store.trips && store.trips.length > 0 && (
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Campus Completed Trips History
+            </div>
+            <ul className="space-y-2 max-h-48 overflow-y-auto">
+              {store.trips.slice(0, 5).map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2 text-sm"
+                >
+                  <div>
+                    <div className="font-semibold text-xs text-primary">{t.id} · {t.route}</div>
+                    <div className="text-[10px] text-muted-foreground">Duration: {t.durationMin} mins</div>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {new Date(t.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <p className="text-center text-xs text-muted-foreground">
           No download, no sign-up required to use this. Sign in only if you want your ride history
