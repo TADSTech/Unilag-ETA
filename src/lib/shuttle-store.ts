@@ -9,6 +9,7 @@ type ActiveRide = {
   id: string;
   shuttle: ShuttleId;
   boardStop: Stop;
+  destinationStop: Stop;
   boardTime: number;
 };
 
@@ -142,17 +143,18 @@ function pushFeed(state: StoreState, text: string) {
   ].slice(0, FEED_LIMIT);
 }
 
-export function checkIn(stop: Stop, shuttle: ShuttleId = "A"): ActiveRide {
+export function checkIn(stop: Stop, destinationStop: Stop, shuttle: ShuttleId = "A"): ActiveRide {
   const state = loadFresh();
   sweepStaleIn(state);
   const ride: ActiveRide = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     shuttle,
     boardStop: stop,
+    destinationStop,
     boardTime: Date.now(),
   };
   state.active.push(ride);
-  pushFeed(state, `Student tapped "I'm on Shuttle ${shuttle}" at ${stop}`);
+  pushFeed(state, `Student boarded Shuttle ${shuttle}: ${stop} → ${destinationStop}`);
   save(state);
   setMyRideId(ride.id);
   return ride;

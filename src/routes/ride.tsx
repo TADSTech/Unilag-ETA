@@ -67,9 +67,18 @@ function RiderView() {
   const { stop } = Route.useSearch();
   const { openModal } = useAuthModal();
   const [selectedStop, setSelectedStop] = useState<Stop>(stop ?? STOPS[0]);
+  const [destinationStop, setDestinationStop] = useState<Stop>(
+    STOPS[STOPS.indexOf(selectedStop) + 1] ?? STOPS[STOPS.length - 1]
+  );
   const [tick, setTick] = useState(0);
   const [user, setUser] = useState<MockUser | null>(null);
   const store = useShuttleStore();
+
+  useEffect(() => {
+    const idx = STOPS.indexOf(selectedStop);
+    const nextStop = STOPS[idx + 1] ?? STOPS[STOPS.length - 1];
+    setDestinationStop(nextStop);
+  }, [selectedStop]);
 
   useEffect(() => {
     setUser(getMockUser());
@@ -109,15 +118,16 @@ function RiderView() {
     : null;
 
   function handleCheckIn() {
-    checkIn(selectedStop);
-    toast.success(`You're on Shuttle A · boarded at ${selectedStop}`);
+    checkIn(selectedStop, destinationStop);
+    toast.success(`Boarded Shuttle A: ${selectedStop} → ${destinationStop}`);
   }
 
   function handleCheckOut() {
-    const result = checkOut(selectedStop);
+    const alight = myRide ? myRide.destinationStop : selectedStop;
+    const result = checkOut(alight);
     if (result) {
       toast.success(
-        `Trip logged: ${result.minutes} min from ${result.boardStop} to ${result.alightStop}. ETA data just got smarter.`,
+        `Trip logged: ${result.minutes} min from ${result.boardStop} to ${result.alightStop}. ETA data updated!`,
       );
     }
   }
@@ -191,7 +201,8 @@ function RiderView() {
             <>
               <div className="text-sm text-muted-foreground">
                 On Shuttle {myRide.shuttle} · boarded at{" "}
-                <span className="font-medium text-foreground">{myRide.boardStop}</span>
+                <span className="font-medium text-foreground">{myRide.boardStop}</span> → going to{" "}
+                <span className="font-medium text-foreground">{myRide.destinationStop}</span>
               </div>
               <div className="mt-1 font-display text-2xl font-semibold tabular-nums">
                 {elapsedLabel}
@@ -208,6 +219,26 @@ function RiderView() {
             <>
               <div className="text-sm text-muted-foreground">
                 Boarding at <span className="font-medium text-foreground">{selectedStop}</span>?
+              </div>
+              <div className="mt-3 text-left space-y-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Where are you going?
+                </label>
+                <Select value={destinationStop} onValueChange={(v) => setDestinationStop(v as Stop)}>
+                  <SelectTrigger className="w-full h-9 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STOPS.filter(s => STOPS.indexOf(s) > STOPS.indexOf(selectedStop)).map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                    {STOPS.indexOf(selectedStop) === STOPS.length - 1 && (
+                      <SelectItem value={selectedStop}>{selectedStop}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
               <Button size="lg" className="mt-4 w-full gap-2" onClick={handleCheckIn}>
                 <Bus className="h-4 w-4" /> I'm on Shuttle A

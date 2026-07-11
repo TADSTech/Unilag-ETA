@@ -39,8 +39,10 @@ export function PresenterConsole() {
   }
 
   function handleSimulateBoarding() {
-    checkIn(selectedStop, "A");
-    toast.success(`Boarding simulated at ${selectedStop}`);
+    const idx = STOPS.indexOf(selectedStop);
+    const destination = idx < STOPS.length - 1 ? STOPS[idx + 1] : STOPS[STOPS.length - 1];
+    checkIn(selectedStop, destination, "A");
+    toast.success(`Boarding simulated: ${selectedStop} → ${destination}`);
   }
 
   function handleSimulateArrival() {

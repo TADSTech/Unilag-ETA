@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
+import { getMockUser, type MockUser } from "@/lib/mock-auth";
 import {
   LayoutDashboard,
   Map,
@@ -22,7 +24,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const items = [
+const adminItems = [
   { title: "Overview", url: "/dashboard", icon: LayoutDashboard },
   { title: "Live Map", url: "/dashboard/map", icon: Map },
   { title: "Routes", url: "/dashboard/routes", icon: RouteIcon },
@@ -32,8 +34,26 @@ const items = [
   { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
 
+const studentItems = [
+  { title: "Rider Hub", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Book a Ride", url: "/ride", icon: Bus },
+  { title: "Live Map", url: "/dashboard/map", icon: Map },
+  { title: "Settings", url: "/dashboard/settings", icon: Settings },
+];
+
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [user, setUser] = useState<MockUser | null>(null);
+
+  useEffect(() => {
+    setUser(getMockUser());
+    const onChange = () => setUser(getMockUser());
+    window.addEventListener("shuttle-eta-auth", onChange);
+    return () => window.removeEventListener("shuttle-eta-auth", onChange);
+  }, []);
+
+  const items = user?.role === "admin" ? adminItems : studentItems;
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -43,13 +63,17 @@ export function AppSidebar() {
           </span>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="font-display text-sm font-semibold">Shuttle ETA</span>
-            <span className="text-xs text-sidebar-foreground/60">PESSA Console</span>
+            <span className="text-xs text-sidebar-foreground/60">
+              {user?.role === "admin" ? "PESSA Console" : "Rider Account"}
+            </span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Operations</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {user?.role === "admin" ? "Operations" : "Rider Menu"}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
