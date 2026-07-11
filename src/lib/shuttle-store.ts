@@ -26,13 +26,14 @@ const CHANGE_EVENT = "shuttle-eta-store-change";
 export const AUTO_CHECKOUT_MIN = 45;
 const FEED_LIMIT = 20;
 
-// Seeded from the eight manual timings the team walked (Gate -> Faculty -> Moremi -> PESSA)
+// Seeded from the eight manual timings the team walked (Gate -> New Hall -> Moremi -> Faculty -> PESSA)
 // before writing any code, so the app has a real baseline from tap #1.
 const BASELINE: Record<Stop, StopStat> = {
   "Main Gate": { totalMin: 6 * 8, count: 8 },
-  Faculty: { totalMin: 5 * 8, count: 8 },
-  Moremi: { totalMin: 9 * 8, count: 8 },
-  PESSA: { totalMin: 12 * 8, count: 8 },
+  "New Hall": { totalMin: 4 * 8, count: 8 },
+  Moremi: { totalMin: 8 * 8, count: 8 },
+  Faculty: { totalMin: 11 * 8, count: 8 },
+  PESSA: { totalMin: 14 * 8, count: 8 },
 };
 
 function freshState(): StoreState {

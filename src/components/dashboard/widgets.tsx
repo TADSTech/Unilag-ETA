@@ -110,11 +110,12 @@ export function RouteMap() {
   }, []);
   const stops = [
     { x: 60, y: 200, name: "Main Gate" },
-    { x: 220, y: 120, name: "Faculty" },
-    { x: 400, y: 160, name: "Moremi" },
-    { x: 560, y: 90, name: "PESSA" },
+    { x: 180, y: 130, name: "New Hall" },
+    { x: 300, y: 170, name: "Moremi" },
+    { x: 440, y: 110, name: "Faculty" },
+    { x: 560, y: 160, name: "PESSA" },
   ];
-  const path = `M60 200 Q140 60 220 120 T400 160 T560 90`;
+  const path = `M60 200 Q120 150 180 130 T300 170 T440 110 T560 160`;
   return (
     <Card>
       <CardHeader>

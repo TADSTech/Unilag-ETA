@@ -33,17 +33,17 @@ export function PhoneMockup() {
           <div className="mt-1 text-xs text-muted-foreground">based on 14 recent trips</div>
         </div>
         <div className="mt-6 space-y-2 rounded-xl border border-border bg-card p-3">
-          {["Main Gate", "Faculty", "Moremi", "PESSA"].map((s, i) => (
+          {["Main Gate", "New Hall", "Moremi", "Faculty", "PESSA"].map((s, i) => (
             <div key={s} className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span
-                  className={`h-2 w-2 rounded-full ${i === 1 ? "bg-primary animate-pulse" : "bg-muted-foreground/40"}`}
+                  className={`h-2 w-2 rounded-full ${i === 3 ? "bg-primary animate-pulse" : "bg-muted-foreground/40"}`}
                 />
-                <span className={i === 1 ? "font-medium text-foreground" : "text-muted-foreground"}>
+                <span className={i === 3 ? "font-medium text-foreground" : "text-muted-foreground"}>
                   {s}
                 </span>
               </div>
-              <span className="tabular-nums text-muted-foreground">{[3, 7, 11, 14][i]}m</span>
+              <span className="tabular-nums text-muted-foreground">{[3, 6, 9, 12, 15][i]}m</span>
             </div>
           ))}
         </div>

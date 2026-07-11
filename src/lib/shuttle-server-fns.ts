@@ -18,35 +18,65 @@ export type StoreState = {
 
 const BASELINE: Record<Stop, StopStat> = {
   "Main Gate": { totalMin: 6 * 8, count: 8 },
-  Faculty: { totalMin: 5 * 8, count: 8 },
-  Moremi: { totalMin: 9 * 8, count: 8 },
-  PESSA: { totalMin: 12 * 8, count: 8 },
+  "New Hall": { totalMin: 4 * 8, count: 8 },
+  Moremi: { totalMin: 8 * 8, count: 8 },
+  Faculty: { totalMin: 11 * 8, count: 8 },
+  PESSA: { totalMin: 14 * 8, count: 8 },
 };
 
-// Server-side global in-memory state
-let serverState: StoreState = {
-  stopStats: structuredClone(BASELINE),
+const INITIAL_STATE: StoreState = {
+  stopStats: BASELINE,
   active: [],
   feed: [{ id: "seed-1", text: "Baseline seeded from 8 manually timed trips", time: Date.now() }],
 };
 
+// Use a free public KV store to persist state across stateless Vercel edge/serverless requests.
+const KV_ENDPOINT = "https://kvdb.io/Kx9YmZ8p2qRtS8b5MhG67D/state";
+
+async function fetchFromKv(): Promise<StoreState> {
+  try {
+    const res = await fetch(KV_ENDPOINT);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.stopStats) {
+        return data as StoreState;
+      }
+    }
+  } catch (e) {
+    console.error("KV fetch failed, using local fallback", e);
+  }
+  return INITIAL_STATE;
+}
+
+async function saveToKv(state: StoreState): Promise<void> {
+  try {
+    await fetch(KV_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(state),
+    });
+  } catch (e) {
+    console.error("KV save failed", e);
+  }
+}
+
 export const getServerState = createServerFn("GET", async () => {
-  return serverState;
+  return await fetchFromKv();
 });
 
 export const syncServerState = createServerFn(
   "POST",
   async (payload: { state: StoreState }) => {
-    serverState = payload.state;
-    return serverState;
+    await saveToKv(payload.state);
+    return payload.state;
   }
 );
 
 export const resetServerState = createServerFn("POST", async () => {
-  serverState = {
+  const fresh: StoreState = {
     stopStats: structuredClone(BASELINE),
     active: [],
     feed: [{ id: "seed-reset", text: "Demo state reset to baseline", time: Date.now() }],
   };
-  return serverState;
+  await saveToKv(fresh);
+  return fresh;
 });

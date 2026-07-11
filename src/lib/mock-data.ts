@@ -1,4 +1,4 @@
-export const STOPS = ["Main Gate", "Faculty", "Moremi", "PESSA"] as const;
+export const STOPS = ["Main Gate", "New Hall", "Moremi", "Faculty", "PESSA"] as const;
 export type Stop = (typeof STOPS)[number];
 
 export type Trip = {
@@ -38,9 +38,10 @@ export const TRIPS: Trip[] = Array.from({ length: 24 }, (_, i) => {
 
 export const ETA_BY_STOP: Record<Stop, { eta: number; trips: number }> = {
   "Main Gate": { eta: 3, trips: 42 },
-  Faculty: { eta: 7, trips: 38 },
-  Moremi: { eta: 11, trips: 29 },
-  PESSA: { eta: 14, trips: 47 },
+  "New Hall": { eta: 6, trips: 35 },
+  Moremi: { eta: 9, trips: 29 },
+  Faculty: { eta: 12, trips: 38 },
+  PESSA: { eta: 15, trips: 47 },
 };
 
 export const HEATMAP = Array.from({ length: 7 }, (_, d) =>

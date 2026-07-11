@@ -44,6 +44,21 @@ export function AuthModal() {
     navigate({ to: "/dashboard" });
   }
 
+  async function submitAnonymous() {
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 400));
+    signInMock({
+      email: `guest-${Math.floor(1000 + Math.random() * 9000)}@unilag.edu.ng`,
+      name: "Guest Rider",
+      role: "student",
+    });
+    setLoading(false);
+    closeModal();
+    // Since guest riders usually view the ride page, let's keep them on /ride or go to /dashboard
+    // depending on their page context, or just navigate to dashboard for simplicity.
+    navigate({ to: "/dashboard" });
+  }
+
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : closeModal())}>
       <DialogContent className="sm:max-w-md">
@@ -87,6 +102,19 @@ export function AuthModal() {
               disabled={loading}
             >
               Continue with Google
+            </Button>
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-border"></div>
+              <span className="flex-shrink mx-3 text-[10px] text-muted-foreground uppercase">or</span>
+              <div className="flex-grow border-t border-border"></div>
+            </div>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={submitAnonymous}
+              disabled={loading}
+            >
+              Continue as Guest (Anonymous)
             </Button>
           </TabsContent>
           <TabsContent value="signup" className="space-y-3 pt-4">
