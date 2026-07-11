@@ -1,7 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { STOPS, type Stop } from "./mock-data";
-import fs from "node:fs";
-import path from "node:path";
 
 export type StopStat = { totalMin: number; count: number };
 export type ActiveRide = {
@@ -34,19 +32,33 @@ const INITIAL_STATE: StoreState = {
 };
 
 const KV_ENDPOINT = "https://kvdb.io/Kx9YmZ8p2qRtS8b5MhG67D/state";
-const STATE_FILE = path.join(process.cwd(), "state.json");
 
-// Persistent storage: tries local filesystem first (perfect for local running), falls back to KV store & in-memory.
+// Helper to get Node modules safely only when running on the server
+async function getFsAndPath() {
+  if (typeof window === "undefined") {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    return { fs: fs.default || fs, path: path.default || path };
+  }
+  return { fs: null, path: null };
+}
+
 async function fetchState(): Promise<StoreState> {
-  // 1. Try reading local JSON file
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      const raw = fs.readFileSync(STATE_FILE, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.stopStats) return parsed as StoreState;
+  // 1. Try reading local JSON file on the Server
+  if (typeof window === "undefined") {
+    try {
+      const { fs, path } = await getFsAndPath();
+      if (fs && path && typeof process !== "undefined" && process.cwd) {
+        const stateFile = path.join(process.cwd(), "state.json");
+        if (fs.existsSync(stateFile)) {
+          const raw = fs.readFileSync(stateFile, "utf-8");
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.stopStats) return parsed as StoreState;
+        }
+      }
+    } catch (e) {
+      // Ignore filesystem read errors
     }
-  } catch (e) {
-    // Ignore local filesystem read errors on read-only hosting
   }
 
   // 2. Fall back to KV store
@@ -64,16 +76,25 @@ async function fetchState(): Promise<StoreState> {
 }
 
 async function saveState(state: StoreState): Promise<void> {
-  // 1. Try writing local JSON file
-  try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), "utf-8");
-  } catch (e) {
-    // Fall back to /tmp on serverless environments
+  // 1. Try writing local JSON file on the Server
+  if (typeof window === "undefined") {
     try {
-      const tempFile = path.join("/tmp", "state.json");
-      fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), "utf-8");
-    } catch (err) {
-      // Ignore write errors
+      const { fs, path } = await getFsAndPath();
+      if (fs && path && typeof process !== "undefined" && process.cwd) {
+        const stateFile = path.join(process.cwd(), "state.json");
+        fs.writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
+      }
+    } catch (e) {
+      // Fall back to /tmp on serverless environments
+      try {
+        const { fs, path } = await getFsAndPath();
+        if (fs && path) {
+          const tempFile = path.join("/tmp", "state.json");
+          fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), "utf-8");
+        }
+      } catch (err) {
+        // Ignore write errors
+      }
     }
   }
 
