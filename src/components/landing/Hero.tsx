@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { QrCode, ArrowRight, MapPin } from "lucide-react";
-import { PhoneMockup } from "./PhoneMockup";
+import { Hero3DElements } from "./Hero3DElements";
 
 export function Hero() {
   return (
@@ -54,7 +54,7 @@ export function Hero() {
           </p>
         </div>
         <div className="flex items-center justify-center">
-          <PhoneMockup />
+          <Hero3DElements />
         </div>
       </div>
     </section>
